@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <button onclick="updateUser()">Update User 1 (Make Age 99)</button>
+    <div id="update-result"></div>
+    <hr />
+    <button onclick="addUser()">Add User</button>
+    <div id="new-user"></div>
+    <hr />
+    <button onclick="getUser()">Get User 1</button>
+    <div id="get-user"></div>
+    <hr />
+
+    <div id="user-container"></div>
+    <script>
+      let users = [];
+      document.addEventListener("DOMContentLoaded", async () => {
+        try {
+          const response = await axios.get("https://dummyjson.com/users");
+
+          users = response.data.users;
+
+          const usersList = users
+            .map((user) => {
+              return `<div>
+                      Fullname: ${user.firstName} ${user.lastName} | Age: ${user.age} | Gender: ${user.gender}<br>
+                      Email: ${user.email} <br>
+                      Contact: ${user.phone} 
+                    </div>`;
+            })
+            .join("<br>");
+
+          document.getElementById("user-container").innerHTML = usersList;
+        } catch (error) {
+          console.log(error);
+        }
+      });
+
+      async function getUser() {
+        try {
+          const response = await axios.get("https://dummyjson.com/users/1");
+          console.log(response);
+          const user = response.data;
+
+          document.getElementById("get-user").innerHTML = `<div>
+              Fullname: ${user.firstName} ${user.lastName} | Age: ${user.age} | Gender: ${user.gender}<br>
+              Email: ${user.email} <br>
+              Contact: ${user.phone} 
+            </div>`;
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function addUser() {
+        try {
+          const response = await axios.post("https://dummyjson.com/users/add", {
+            firstName: "Ivan",
+            lastName: "Medrano",
+            email: "ivan@gmail.com",
+            age: 22,
+            gender: "male",
+            phone: "+1 555 123 4567",
+          });
+          document.getElementById("new-user").innerHTML = `<div>
+              Fullname: ${response.data.firstName} ${response.data.lastName} | Age: ${response.data.age} | Gender: ${response.data.gender}<br>
+              Email: ${response.data.email} <br>
+              Contact: ${response.data.phone} 
+            </div>`;
+
+          users.unshift(response.data);
+
+          const usersList = users
+            .map((user) => {
+              return `<div>
+                      Fullname: ${user.firstName} ${user.lastName} | Age: ${user.age} | Gender: ${user.gender}<br>
+                      Email: ${user.email} <br>
+                      Contact: ${user.phone} 
+                    </div>`;
+            })
+            .join("<br>");
+
+          document.getElementById("user-container").innerHTML = usersList;
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      async function updateUser() {
+        try {
+          const response = await axios.put("https://dummyjson.com/users/1", {
+            age: 99,
+          });
+
+          const updatedUser = response.data;
+          console.log(updatedUser);
+
+          const index = users.findIndex((user) => user.id === 1);
+
+          users[index] = updatedUser;
+
+          const usersList = users
+            .map((user) => {
+              return `<div>
+                      Fullname: ${user.firstName} ${user.lastName} | Age: ${user.age} | Gender: ${user.gender}<br>
+                      Email: ${user.email} <br>
+                      Contact: ${user.phone} 
+                    </div>`;
+            })
+            .join("<br>");
+
+          document.getElementById("user-container").innerHTML = usersList;
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    </script>
+  </body>
+</html>
