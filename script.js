@@ -15,8 +15,12 @@ const renderUserCard = (user) => {
   }
 
   return `
-        <div class="bg-gray-800/60 p-5 rounded-xl shadow-lg border border-purple-500/30 backdrop-blur-sm 
+        <div class="group relative bg-gray-800/60 p-5 rounded-xl shadow-lg border border-purple-500/30 backdrop-blur-sm 
                     transform transition-all duration-300 hover:scale-105 hover:border-purple-400 hover:shadow-purple-400/20">
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
+                <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded-md text-xs" onclick="editUser(${user.id})">Edit</button>
+                <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-md text-xs" onclick="deleteUser(${user.id})">Delete</button>
+            </div>
             <h3 class="text-xl font-bold text-purple-300">${user.firstName} ${user.lastName}</h3>
             <p class="text-gray-400 text-sm">${user.email}</p>
             <div class="mt-4 border-t border-gray-700 pt-3">
@@ -29,30 +33,75 @@ const renderUserCard = (user) => {
     `;
 };
 
-const renderUserList = () => {
-  const usersListHtml = users.map((user) => renderUserCard(user)).join("");
+const renderUserList = (usersToRender = users) => {
+  const usersListHtml = usersToRender
+    .map((user) => renderUserCard(user))
+    .join("");
   document.getElementById("user-container").innerHTML = usersListHtml;
 };
 
+const updateList = () => {
+  const searchTerm = document
+    .getElementById("search-input")
+    .value.toLowerCase();
+  const sortBy = document.getElementById("sort-select").value;
+
+  let filteredUsers = users.filter(
+    (user) =>
+      user.firstName.toLowerCase().includes(searchTerm) ||
+      user.lastName.toLowerCase().includes(searchTerm)
+  );
+
+  let sortedUsers = [...filteredUsers];
+
+  switch (sortBy) {
+    case "name-asc":
+      sortedUsers.sort((a, b) => a.firstName.localeCompare(b.firstName));
+      break;
+    case "name-desc":
+      sortedUsers.sort((a, b) => b.firstName.localeCompare(a.firstName));
+      break;
+    case "email-asc":
+      sortedUsers.sort((a, b) => a.email.localeCompare(b.email));
+      break;
+    case "email-desc":
+      sortedUsers.sort((a, b) => b.email.localeCompare(a.email));
+      break;
+    case "age-asc":
+      sortedUsers.sort((a, b) => a.age - b.age);
+      break;
+    case "age-desc":
+      sortedUsers.sort((a, b) => b.age - a.age);
+      break;
+  }
+
+  renderUserList(sortedUsers);
+};
+
 document.addEventListener("DOMContentLoaded", async () => {
+  const loadingSpinner = document.getElementById("loading-spinner");
+  const userControls = document.getElementById("user-controls");
+
   try {
     const response = await axios.get("https://dummyjson.com/users");
     users = response.data.users;
-    renderUserList();
+    updateList();
+
+    // Hide spinner and show controls
+    loadingSpinner.classList.add("hidden");
+    userControls.classList.remove("hidden");
+
+    const searchInput = document.getElementById("search-input");
+    searchInput.addEventListener("keyup", updateList);
+
+    const sortSelect = document.getElementById("sort-select");
+    sortSelect.addEventListener("change", updateList);
   } catch (error) {
     console.log(error);
+    // Hide spinner even on error
+    loadingSpinner.classList.add("hidden");
   }
 });
-
-async function getUser() {
-  try {
-    const response = await axios.get("https://dummyjson.com/users/1");
-    const user = response.data;
-    document.getElementById("get-user").innerHTML = renderUserCard(user);
-  } catch (error) {
-    console.error(error);
-  }
-}
 
 async function addUser() {
   try {
@@ -68,7 +117,7 @@ async function addUser() {
     const today = new Date();
     const ageDiffMs = today.getTime() - birthDateObj.getTime();
     const ageDate = new Date(ageDiffMs);
-    const calculatedAge = Math.abs(ageDate.getUTCFullYear()); // Calculate age
+    const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970); // Calculate age
 
     const newUserPayload = {
       firstName: document.getElementById("firstName").value,
@@ -107,7 +156,7 @@ async function addUser() {
     users.unshift(newUser);
 
     // Re-render the main user list
-    renderUserList();
+    updateList();
 
     // Display a notification with the new user's card
     const notificationEl = document.getElementById("new-user-notification");
@@ -131,27 +180,110 @@ async function addUser() {
   }
 }
 
-async function updateUser() {
+async function updateUser(userId) {
   try {
-    const response = await axios.put("https://dummyjson.com/users/1", {
-      age: 99,
-    });
+    const birthDateStr = document.getElementById("birthDate").value;
 
-    const updatedUser = response.data;
-    const index = users.findIndex((user) => user.id === updatedUser.id);
-
-    if (index !== -1) {
-      users[index] = updatedUser;
-    } else {
-      // Find by name if id is not reliable from the dummy API
-      const findByNameIndex = users.findIndex(
-        (u) => u.firstName === "Terry" && u.lastName === "Medhurst"
-      );
-      if (findByNameIndex !== -1) users[findByNameIndex] = updatedUser;
+    // Basic validation for birthDate
+    if (!birthDateStr) {
+      alert("Please enter a Birth Date.");
+      return;
     }
 
-    renderUserList();
+    const birthDateObj = new Date(birthDateStr);
+    const today = new Date();
+    const ageDiffMs = today.getTime() - birthDateObj.getTime();
+    const ageDate = new Date(ageDiffMs);
+    const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970); // Calculate age
+
+    const updatedPayload = {
+      firstName: document.getElementById("firstName").value,
+      lastName: document.getElementById("lastName").value,
+      email: document.getElementById("email").value,
+      birthDate: birthDateStr,
+      age: calculatedAge,
+      gender: document.getElementById("gender").value,
+      phone: document.getElementById("phone").value,
+    };
+
+    const response = await axios.put(
+      `https://dummyjson.com/users/${userId}`,
+      updatedPayload
+    );
+
+    const updatedUser = response.data;
+    const index = users.findIndex((user) => user.id === userId);
+
+    if (index !== -1) {
+      users[index] = { ...users[index], ...updatedUser };
+    }
+
+    updateList();
+
+    // Reset form and button
+    document.getElementById("addUserForm").reset();
+    const button = document.getElementById("form-button");
+    button.innerText = "Create User";
+    button.setAttribute("onclick", "addUser()");
+    button.classList.remove("bg-blue-600", "hover:bg-blue-500");
+    button.classList.add("bg-purple-600", "hover:bg-purple-500");
   } catch (error) {
     console.log(error);
+    alert("Failed to update user. Please check the console for details.");
   }
+}
+
+function editUser(userId) {
+  const user = users.find((u) => u.id === userId);
+  if (user) {
+    document.getElementById("firstName").value = user.firstName;
+    document.getElementById("lastName").value = user.lastName;
+    document.getElementById("email").value = user.email;
+    document.getElementById("birthDate").value = user.birthDate
+      ? new Date(user.birthDate).toISOString().split("T")[0]
+      : "";
+    document.getElementById("gender").value = user.gender;
+    document.getElementById("phone").value = user.phone;
+
+    const button = document.getElementById("form-button");
+    button.innerText = "Update User";
+    button.setAttribute("onclick", `updateUser(${userId})`);
+    button.classList.remove("bg-purple-600", "hover:bg-purple-500");
+    button.classList.add("bg-blue-600", "hover:bg-blue-500");
+  }
+}
+
+async function deleteUser(userId) {
+  const user = users.find((u) => u.id === userId);
+  if (
+    user &&
+    confirm(
+      `Are you sure you want to delete ${user.firstName} ${user.lastName}?`
+    )
+  ) {
+    try {
+      const response = await axios.delete(
+        `https://dummyjson.com/users/${userId}`
+      );
+      if (response.status === 200) {
+        const index = users.findIndex((user) => user.id === userId);
+        if (index !== -1) {
+          users.splice(index, 1);
+          updateList();
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Failed to delete user. Please check the console for details.");
+    }
+  }
+}
+
+function resetForm() {
+  document.getElementById("addUserForm").reset();
+  const button = document.getElementById("form-button");
+  button.innerText = "Create User";
+  button.setAttribute("onclick", "addUser()");
+  button.classList.remove("bg-blue-600", "hover:bg-blue-500");
+  button.classList.add("bg-purple-600", "hover:bg-purple-500");
 }

@@ -4,12 +4,17 @@
 
 This project is about Front-End development using an API.
 
+## Theme
+
+- Futuristic
+
 ## Core Technologies
 
 - HTML
 - Tailwind CSS
 - JavaScript
 - Axios
+- Font Awesome
 
 ## Coding Style
 
