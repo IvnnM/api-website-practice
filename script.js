@@ -15,12 +15,25 @@ const renderUserCard = (user) => {
   }
 
   return `
-        <div class="group relative bg-gray-800/60 p-5 rounded-xl shadow-lg border border-purple-500/30 backdrop-blur-sm 
+        <div class="user-card group relative bg-gray-800/60 p-5 rounded-xl shadow-lg border border-purple-500/30 backdrop-blur-sm
                     transform transition-all duration-300 hover:scale-105 hover:border-purple-400 hover:shadow-purple-400/20">
-            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex space-x-2">
-                <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-2 rounded-md text-xs" onclick="editUser(${user.id})">Edit</button>
-                <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-md text-xs" onclick="deleteUser(${user.id})">Delete</button>
+
+            <button
+                class="more-options-btn absolute top-2 right-2 text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none p-1 rounded-full z-20"
+                onclick="toggleUserCardActions(event, ${user.id})"
+            >
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+
+            <div id="user-actions-${user.id}" class="user-card-actions absolute top-10 right-2 w-36 bg-gray-800 border border-gray-700 rounded-md shadow-lg py-1 z-10 hidden">
+                <button class="block w-full text-left px-4 py-2 text-sm text-purple-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" onclick="editUser(${user.id})">
+                    <i class="fas fa-pencil-alt mr-2"></i>Edit
+                </button>
+                <button class="block w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-gray-700 hover:text-white transition-colors duration-200" onclick="deleteUser(${user.id})">
+                    <i class="fas fa-trash-alt mr-2"></i>Delete
+                </button>
             </div>
+
             <h3 class="text-xl font-bold text-purple-300">${user.firstName} ${user.lastName}</h3>
             <p class="text-gray-400 text-sm">${user.email}</p>
             <div class="mt-4 border-t border-gray-700 pt-3">
@@ -33,6 +46,31 @@ const renderUserCard = (user) => {
     `;
 };
 
+// Function to toggle user card actions visibility
+function toggleUserCardActions(event, userId) {
+    event.stopPropagation(); // Prevent card click event if any
+
+    const targetActions = document.getElementById(`user-actions-${userId}`);
+
+    // Close all other open action menus
+    document.querySelectorAll('.user-card-actions').forEach(actionsMenu => {
+        if (actionsMenu.id !== `user-actions-${userId}` && !actionsMenu.classList.contains('hidden')) {
+            actionsMenu.classList.add('hidden');
+        }
+    });
+
+    // Toggle the target actions menu
+    targetActions.classList.toggle('hidden');
+}
+
+// Close action menus when clicking anywhere else on the document
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('.user-card-actions') && !event.target.closest('.more-options-btn')) {
+        document.querySelectorAll('.user-card-actions').forEach(actionsMenu => {
+            actionsMenu.classList.add('hidden');
+        });
+    }
+});
 const renderUserList = (usersToRender = users) => {
   const usersListHtml = usersToRender
     .map((user) => renderUserCard(user))
