@@ -274,6 +274,9 @@ async function updateUser(userId) {
 function editUser(userId) {
   const user = users.find((u) => u.id === userId);
   if (user) {
+    // Scroll to the form
+    document.getElementById('addUserForm').scrollIntoView({ behavior: 'smooth' });
+
     document.getElementById("firstName").value = user.firstName;
     document.getElementById("lastName").value = user.lastName;
     document.getElementById("email").value = user.email;
